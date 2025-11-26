@@ -34,16 +34,16 @@ public class InventoryControllerV4 {
     }
 
     @GetMapping(value = "/info-by-barcode", produces = "application/json;charset=UTF-8")
-    public ResponseEntity<Response<InvInfo>> getInfoByBarcode(@RequestParam("barcode") String barcode,
+    public ResponseEntity<Response<Inventory>> getInfoByBarcode(@RequestParam("barcode") String barcode,
                                                               @RequestParam("user-id") String userId) {
-        InvInfo result = service.getInfoByBarcode(barcode, userId);
+        Inventory result = service.getInfoByBarcode(barcode, userId);
         return ResponseEntity.ok(Response.getResultResponse(result));
     }
 
     @GetMapping(value = "/info-by-inv-code", produces = "application/json;charset=UTF-8")
-    public ResponseEntity<Response<InvInfo>> getInfoByInvCode(@RequestParam("inv-code") String invCode,
+    public ResponseEntity<Response<Inventory>> getInfoByInvCode(@RequestParam("inv-code") String invCode,
                                                               @RequestParam("user-id") String userId) {
-        InvInfo result = service.getInfoByInvCode(invCode, userId);
+        Inventory result = service.getInfoByInvCode(invCode, userId);
         return ResponseEntity.ok(Response.getResultResponse(result));
     }
 
@@ -174,5 +174,18 @@ public class InventoryControllerV4 {
                                                                                  @RequestParam("top") int top) {
         List<LatestMovementItem> result = service.getLatestMovementItems(invCode, whsCode, top);
         return ResponseEntity.ok(Response.getResultResponse(result));
+    }
+
+    @GetMapping(value = "/brands", produces = "application/json;charset=UTF-8")
+    public ResponseEntity<Response<List<Brand>>> getBrandList() {
+        List<Brand> result = service.getBrandList();
+        return ResponseEntity.ok(Response.getResultResponse(result));
+    }
+
+
+    @PostMapping(value = "/update-inv-master-data", consumes = "application/json;charset=UTF-8")
+    public ResponseEntity<Response<Void>> updateInvMasterData(@RequestBody UpdateInvRequest request) {
+        service.updateInvMasterData(request);
+        return ResponseEntity.ok(Response.getSuccessResponse());
     }
 }

@@ -32,6 +32,7 @@ public class User {
     private boolean purchaseOrdersFlag;
     private boolean barcodeFlag;
     private boolean archiveFlag;
+    private boolean changeInvMasterFlag;
 
     public void setUserInfo(String field, boolean value) {
         switch (field) {
@@ -76,6 +77,9 @@ public class User {
                 break;
             case "archiveBtn":
                 setArchiveFlag(!value);
+                break;
+            case "changeInvMasterFlag":
+                setChangeInvMasterFlag(!value);
                 break;
         }
     }

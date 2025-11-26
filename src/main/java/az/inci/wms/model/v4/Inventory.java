@@ -12,4 +12,6 @@ public class Inventory {
     private String internalCount;
     private String defaultUomCode;
     private double whsQty;
+    private String info;
+    private String whsCode;
 }

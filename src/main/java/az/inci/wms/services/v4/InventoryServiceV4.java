@@ -14,11 +14,10 @@ import java.util.List;
 
 import static jakarta.persistence.ParameterMode.IN;
 
-@SuppressWarnings({"SqlResolve", "SqlNoDataSourceInspection"})
 @Service
 public class InventoryServiceV4 extends AbstractService {
-    public InvInfo getInfoByBarcode(String barcode, String userId) {
-        InvInfo invInfo = new InvInfo();
+    public Inventory getInfoByBarcode(String barcode, String userId) {
+        Inventory inventory = new Inventory();
 
         StoredProcedureQuery q = em.createStoredProcedureQuery("SP_INV_INFO_BY_BARCODE");
         q.registerStoredProcedureParameter("BARCODE", String.class, IN);
@@ -27,21 +26,22 @@ public class InventoryServiceV4 extends AbstractService {
         q.setParameter("USER_ID", userId);
         List<Object[]> result = q.getResultList();
         if (!result.isEmpty()) {
-            invInfo.setInvCode(String.valueOf(result.get(0)[0]));
-            invInfo.setInvName(String.valueOf(result.get(0)[1]));
-            invInfo.setInfo(String.valueOf(result.get(0)[2]));
-            invInfo.setWhsQty(Double.parseDouble(String.valueOf(result.get(0)[3])));
-            invInfo.setDefaultUomCode(String.valueOf(result.get(0)[4]));
-            invInfo.setWhsCode(String.valueOf(result.get(0)[5]));
+            inventory.setInvCode(String.valueOf(result.get(0)[0]));
+            inventory.setInvName(String.valueOf(result.get(0)[1]));
+            inventory.setInfo(String.valueOf(result.get(0)[2]));
+            inventory.setWhsQty(Double.parseDouble(String.valueOf(result.get(0)[3])));
+            inventory.setDefaultUomCode(String.valueOf(result.get(0)[4]));
+            inventory.setWhsCode(String.valueOf(result.get(0)[5]));
+            inventory.setInvBrand(String.valueOf(result.get(0)[6]));
         }
 
         em.close();
 
-        return invInfo;
+        return inventory;
     }
 
-    public InvInfo getInfoByInvCode(String invCode, String userId) {
-        InvInfo invInfo = new InvInfo();
+    public Inventory getInfoByInvCode(String invCode, String userId) {
+        Inventory inventory = new Inventory();
 
         StoredProcedureQuery q = em.createStoredProcedureQuery("SP_INV_INFO_BY_INV_CODE");
         q.registerStoredProcedureParameter("INV_CODE", String.class, IN);
@@ -50,17 +50,18 @@ public class InventoryServiceV4 extends AbstractService {
         q.setParameter("USER_ID", userId);
         List<Object[]> result = q.getResultList();
         if (!result.isEmpty()) {
-            invInfo.setInvCode(String.valueOf(result.get(0)[0]));
-            invInfo.setInvName(String.valueOf(result.get(0)[1]));
-            invInfo.setInfo(String.valueOf(result.get(0)[2]));
-            invInfo.setWhsQty(Double.parseDouble(String.valueOf(result.get(0)[3])));
-            invInfo.setDefaultUomCode(String.valueOf(result.get(0)[4]));
-            invInfo.setWhsCode(String.valueOf(result.get(0)[5]));
+            inventory.setInvCode(String.valueOf(result.get(0)[0]));
+            inventory.setInvName(String.valueOf(result.get(0)[1]));
+            inventory.setInfo(String.valueOf(result.get(0)[2]));
+            inventory.setWhsQty(Double.parseDouble(String.valueOf(result.get(0)[3])));
+            inventory.setDefaultUomCode(String.valueOf(result.get(0)[4]));
+            inventory.setWhsCode(String.valueOf(result.get(0)[5]));
+            inventory.setInvBrand(String.valueOf(result.get(0)[6]));
         }
 
         em.close();
 
-        return invInfo;
+        return inventory;
     }
 
     public List<Inventory> getSearchResult(String keyword, String field) {
@@ -584,5 +585,39 @@ public class InventoryServiceV4 extends AbstractService {
         }
         em.close();
         return latestMovementItemList;
+    }
+
+    public List<Brand> getBrandList() {
+        List<Brand> brandList = new ArrayList<>();
+        Query query = em.createNativeQuery("""
+                SELECT INV_BRAND_CODE, INV_BRAND_NAME FROM INV_BRAND;
+                """);
+        List<Object[]> resultList = query.getResultList();
+        for (Object[] result : resultList) {
+            Brand brand = new Brand();
+            brand.setBrandCode(String.valueOf(result[0]));
+            brand.setBrandName(String.valueOf(result[1]));
+            brandList.add(brand);
+        }
+        em.close();
+        return brandList;
+    }
+
+    @Transactional
+    public void updateInvMasterData(UpdateInvRequest request) {
+        Query query = em.createNativeQuery("""
+                UPDATE INV_MASTER
+                SET INV_BRAND_CODE = :INV_BRAND_CODE,
+                    LAST_REC_USER = :LAST_REC_USER,
+                    LAST_HOST_NAME = :LAST_HOST_NAME,
+                    LAST_REC_DATE = CONVERT(DATETIME2(0), GETDATE())
+                WHERE INV_CODE = :INV_CODE;
+                """);
+        query.setParameter("INV_BRAND_CODE", request.getBrandCode());
+        query.setParameter("INV_CODE", request.getInvCode());
+        query.setParameter("LAST_REC_USER", request.getUserId());
+        query.setParameter("LAST_HOST_NAME", request.getDeviceId());
+        query.executeUpdate();
+        em.close();
     }
 }

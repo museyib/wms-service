@@ -78,6 +78,10 @@ public class InvMoveServiceV4 extends AbstractService {
     @Transactional
     public void insertProductApproveData(ProductApproveRequest request) {
         Query query = em.createNativeQuery("""
+                IF NOT EXISTS(SELECT * FROM BMSB1.dbo.TERMINAL_APPROVE
+                                       WHERE SYSTEM_NO=:SYSTEM_NO
+                                         AND INV_CODE=:INV_CODE
+                                         AND USER_ID=:USER_ID)
                 INSERT INTO TERMINAL_APPROVE(
                     SYSTEM_NO,
                     SYSTEM_DATE,
