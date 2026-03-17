@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.persistence.ParameterMode.IN;
+import static jakarta.persistence.ParameterMode.OUT;
 
 @Service
 public class InventoryServiceV4 extends AbstractService {
@@ -243,8 +244,9 @@ public class InventoryServiceV4 extends AbstractService {
                                     AND IA.INV_ATTRIB_ID = IMA.INV_ATTRIB_ID
                                     AND (IA.WHS_CODE = (SELECT TOP 1 WHS_CODE
                                                          FROM BMS_USER_WHS
-                                                         WHERE USER_ID = :USER_ID)
-                                             OR IA.INV_ATTRIB_ID NOT IN ('AT010','AT011'))
+                                                         WHERE USER_ID = :USER_ID
+                                                         AND MAIN_WHS_FLAG = 1)
+                                             OR IA.INV_ATTRIB_ID NOT IN ('AT010','AT011', 'AT012'))
                 WHERE IMA.INV_CODE = :INV_CODE""");
         q.setParameter("USER_ID", userId);
         q.setParameter("INV_CODE", invCode);
@@ -278,7 +280,7 @@ public class InventoryServiceV4 extends AbstractService {
                     q = em.createNativeQuery("""
                             DELETE FROM INV_ATTRIB
                             WHERE INV_CODE = :INV_CODE AND INV_ATTRIB_ID = :INV_ATTRIB_ID
-                                    AND (WHS_CODE = :WHS_CODE OR INV_ATTRIB_ID NOT IN ('AT010','AT011'))""");
+                                    AND (WHS_CODE = :WHS_CODE OR INV_ATTRIB_ID NOT IN ('AT010','AT011', 'AT012'))""");
                     q.setParameter("INV_CODE", attribute.getInvCode());
                     q.setParameter("INV_ATTRIB_ID", attribute.getAttributeId());
                     q.setParameter("WHS_CODE", attribute.getWhsCode());
@@ -287,7 +289,7 @@ public class InventoryServiceV4 extends AbstractService {
                             UPDATE INV_ATTRIB
                             SET ATTRIB_VALUE = :ATTRIB_VALUE
                             WHERE INV_CODE = :INV_CODE AND INV_ATTRIB_ID = :INV_ATTRIB_ID
-                                    AND (WHS_CODE = :WHS_CODE OR INV_ATTRIB_ID NOT IN ('AT010','AT011'))""");
+                                    AND (WHS_CODE = :WHS_CODE OR INV_ATTRIB_ID NOT IN ('AT010','AT011', 'AT012'))""");
                     q.setParameter("ATTRIB_VALUE", attribute.getAttributeValue());
                     q.setParameter("INV_CODE", attribute.getInvCode());
                     q.setParameter("INV_ATTRIB_ID", attribute.getAttributeId());
@@ -317,63 +319,28 @@ public class InventoryServiceV4 extends AbstractService {
     }
 
     @Transactional
-    public boolean updateShelfBarcode(String whsCode,
-                                      String shelfBarcode,
-                                      String invBarcode) {
+    public String updateShelfBarcode(String invBarcode,
+                                     String whsCode,
+                                     String invAttribId,
+                                     String shelfBarcode) {
         shelfBarcode = shelfBarcode.replace("%23", "#");
-        Query selectQuery = em.createNativeQuery("""
-                SELECT INV_CODE FROM INV_ATTRIB
-                WHERE INV_CODE = (SELECT INV_CODE FROM INV_BARCODE
-                                       WHERE BAR_CODE = :BAR_CODE)
-                AND INV_ATTRIB_ID = 'AT010' AND WHS_CODE = :WHS_CODE""");
-        selectQuery.setParameter("BAR_CODE", invBarcode);
-        selectQuery.setParameter("WHS_CODE", whsCode);
-        String invCode = "";
-        List<Object> resultList = selectQuery.getResultList();
-        if (!resultList.isEmpty())
-            invCode = String.valueOf(resultList.get(0));
 
-        if (invCode != null && !invCode.isEmpty()) {
-            Query updateQuery = em.createNativeQuery("""
-                    UPDATE INV_ATTRIB
-                    SET ATTRIB_VALUE = :ATTRIB_VALUE
-                    WHERE INV_CODE = :INV_CODE
-                        AND INV_ATTRIB_ID = 'AT010'
-                        AND WHS_CODE = :WHS_CODE""");
-            updateQuery.setParameter("ATTRIB_VALUE", shelfBarcode);
-            updateQuery.setParameter("INV_CODE", invCode);
-            updateQuery.setParameter("WHS_CODE", whsCode);
-            updateQuery.executeUpdate();
-        } else {
-            selectQuery = em.createNativeQuery("SELECT INV_CODE from INV_BARCODE WHERE BAR_CODE = :BAR_CODE");
-            selectQuery.setParameter("BAR_CODE", invBarcode);
-            resultList = selectQuery.getResultList();
-            if (!resultList.isEmpty()) {
-                invCode = String.valueOf(resultList.get(0));
-                Query insertQuery = em.createNativeQuery("""
-                        INSERT INTO INV_ATTRIB(
-                            INV_CODE,
-                            INV_ATTRIB_ID,
-                            ATTRIB_VALUE,
-                            WHS_CODE)
-                        VALUES (
-                            :INV_CODE,
-                            :INV_ATTRIB_ID,
-                            :ATTRIB_VALUE,
-                            :WHS_CODE)""");
-                insertQuery.setParameter("INV_CODE", invCode);
-                insertQuery.setParameter("INV_ATTRIB_ID", "AT010");
-                insertQuery.setParameter("ATTRIB_VALUE", shelfBarcode);
-                insertQuery.setParameter("WHS_CODE", whsCode);
-                insertQuery.executeUpdate();
-            } else {
-                return false;
-            }
-        }
+        StoredProcedureQuery query = em.createStoredProcedureQuery("SP_UPDATE_WHS_LOCATION");
+        query.registerStoredProcedureParameter("INV_BARCODE", String.class, IN);
+        query.registerStoredProcedureParameter("WHS_CODE", String.class, IN);
+        query.registerStoredProcedureParameter("INV_ATTRIB_ID", String.class, IN);
+        query.registerStoredProcedureParameter("ATTRIB_VALUE", String.class, IN);
+        query.registerStoredProcedureParameter("ERROR_MESSAGE", String.class, OUT);
+        query.setParameter("WHS_CODE", whsCode);
+        query.setParameter("INV_BARCODE", invBarcode);
+        query.setParameter("INV_ATTRIB_ID", invAttribId);
+        query.setParameter("ATTRIB_VALUE", shelfBarcode);
+        query.execute();
+        String errorMessage = String.valueOf(query.getOutputParameterValue("ERROR_MESSAGE"));
 
         em.close();
 
-        return true;
+        return errorMessage;
     }
 
     public List<InvBarcode> getBarcodeList(String invCode) {

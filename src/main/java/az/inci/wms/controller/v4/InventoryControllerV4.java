@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+
 @RequestMapping("/v4/inv")
 @RestController
 public class InventoryControllerV4 {
@@ -103,12 +105,13 @@ public class InventoryControllerV4 {
 
     @PostMapping(value = "/update-shelf-barcode", consumes = "application/json;charset=UTF-8")
     public ResponseEntity<Response<Void>> updateShelfBarcode(@RequestParam("whs-code") String whsCode,
+                                                             @RequestParam(value = "inv-attrib-id", defaultValue = "AT010") String invAttribId,
                                                              @RequestParam("shelf-barcode") String shelfBarcode,
                                                              @RequestBody List<String> invBarcodeList) {
         for (String invBarcode : invBarcodeList) {
-            boolean result = service.updateShelfBarcode(whsCode, shelfBarcode, invBarcode);
-            if (!result)
-                return ResponseEntity.ok(Response.getUserErrorResponse("Barkod üzrə mal tapılmadı: " + invBarcode));
+            String result = service.updateShelfBarcode(invBarcode, whsCode, invAttribId, shelfBarcode);
+            if (!isEmpty(result))
+                return ResponseEntity.ok(Response.getUserErrorResponse(result));
         }
         return ResponseEntity.ok(Response.getSuccessResponse());
     }
