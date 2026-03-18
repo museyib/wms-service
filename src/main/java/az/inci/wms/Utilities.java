@@ -11,4 +11,14 @@ public class Utilities {
 
         return message;
     }
+    public static String getClearMessage(Exception e) {
+        String message;
+        Throwable throwable = e;
+        while (throwable.getCause() != null) {
+            throwable = throwable.getCause();
+        }
+        message = throwable.getMessage();
+
+        return message;
+    }
 }

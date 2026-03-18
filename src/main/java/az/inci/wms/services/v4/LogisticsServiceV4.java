@@ -14,6 +14,14 @@ import static jakarta.persistence.ParameterMode.IN;
 
 @Service
 public class LogisticsServiceV4 extends AbstractService {
+
+    private final UserServiceV4 userService;
+
+    public LogisticsServiceV4(UserServiceV4 userService) {
+        this.userService = userService;
+    }
+
+
     public ShipDocInfo getDocInfoByTrxNo(String trxNo) {
         ShipDocInfo shipDocInfo = null;
 
@@ -345,6 +353,12 @@ public class LogisticsServiceV4 extends AbstractService {
     @Transactional
     public void confirmShipment(List<UpdateDeliveryRequestItem> requestList) {
 
+        UpdateDeliveryRequestItem requestItem = requestList.get(0);
+        String userId = requestItem.getNote().replace("İstifadəçi: ", "");
+        User user = userService.getById(userId);
+        if (!user.isApplyShipCentralFlag() && requestItem.isTransitionFlag()) {
+            throw new IllegalStateException("Mərkəzə qəbul üçün səlahiyyətiniz yoxdur!");
+        }
         for (UpdateDeliveryRequestItem request : requestList) {
             StoredProcedureQuery query = em.createStoredProcedureQuery("SP_CONFIRM_SHIPMENT");
             query.registerStoredProcedureParameter("TRX_NO", String.class, IN);

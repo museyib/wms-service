@@ -33,6 +33,7 @@ public class User {
     private boolean barcodeFlag;
     private boolean archiveFlag;
     private boolean changeInvMasterFlag;
+    private boolean applyShipCentralFlag;
 
     public void setUserInfo(String field, boolean value) {
         switch (field) {
@@ -80,6 +81,9 @@ public class User {
                 break;
             case "changeInvMasterFlag":
                 setChangeInvMasterFlag(!value);
+                break;
+            case "applyShipCentral":
+                setApplyShipCentralFlag(!value);
                 break;
         }
     }
