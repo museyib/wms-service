@@ -33,7 +33,7 @@ public class ShipmentServiceV4 extends AbstractService {
                 FROM SHIP_TRX ST
                 JOIN SHIP_DOC SD ON ST.TRX_NO = SD.TRX_NO
                 JOIN PER_MASTER PM ON SD.DRIVER_CODE = PM.PER_CODE
-                WHERE ST.SRC_TRX_NO = :SRC_TRX_NO AND ST.SHIP_STATUS != 'MD'""");
+                WHERE ST.SRC_TRX_NO = :SRC_TRX_NO AND ST.SHIP_STATUS NOT IN ('MD', 'PL')""");
         q.setParameter("SRC_TRX_NO", trxNo);
         List<Object[]> resultList = q.getResultList();
         CheckShipmentResponse shipmentResponse = new CheckShipmentResponse();
