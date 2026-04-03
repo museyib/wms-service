@@ -80,6 +80,7 @@ public class ShipmentServiceV4 extends AbstractService {
                 INSERT INTO TERMINAL_SHIPMENT(
                     SHIP_REGION_CODE,
                     DRIVER_CODE,
+                    ASSISTANT_CODE,
                     SRC_TRX_NO,
                     VEHICLE_CODE,
                     USER_ID,
@@ -88,6 +89,7 @@ public class ShipmentServiceV4 extends AbstractService {
                 VALUES (
                     :SHIP_REGION_CODE,
                     :DRIVER_CODE,
+                    :ASSISTANT_CODE,
                     :SRC_TRX_NO,
                     :VEHICLE_CODE,
                     :USER_ID,
@@ -97,6 +99,7 @@ public class ShipmentServiceV4 extends AbstractService {
             int transitionFlag = requestItem.getShipStatus().equals("MG") ? 1 : 0;
             q.setParameter("SHIP_REGION_CODE", request.getRegionCode());
             q.setParameter("DRIVER_CODE", request.getDriverCode());
+            q.setParameter("ASSISTANT_CODE", request.getAssistantCode());
             q.setParameter("SRC_TRX_NO", requestItem.getSrcTrxNo());
             q.setParameter("VEHICLE_CODE", request.getVehicleCode());
             q.setParameter("USER_ID", request.getUserId());
